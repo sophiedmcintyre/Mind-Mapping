@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+<style>
+
+.node circle {
+  fill: #999;
+}
+
+.node foreignObject {
+  font: 12.5px sans-serif;
+}
+
+.node--internal circle {
+  fill: #555;
+}
+
+.node--internal text {
+  text-shadow: 0 1px 0 #fff, 0 -1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff;
+}
+
+.link {
+  fill: none;
+  stroke-opacity: 0.4;
+}
+
+</style>
+</head>
+<body>
+<svg width="1500" height="1000"></svg>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="//d3plus.org/js/d3plus.js"></script>
+<script>
+
+var svg = d3.select("svg"),
+    width = +svg.attr("width"),
+    height = +svg.attr("height"),
+    g = svg.append("g").attr("transform", "translate(" + (width / 2 + 40) + ",400)");
+
+var tree = d3.tree()
+    .size([2 * Math.PI, 350])
+    .separation(function(a, b) { return (a.parent == b.parent ? 1 : 2) / a.depth; });
+
+var data = {
+  "name": "28.4 Popular Culture and Mass Media",
+  "children": [
+    {
+      "name": "ROCKING AROUND THE CLOCK",
+      "children": [
+        {
+          "name": " some white country musicians",
+          "children": [
+            {
+              "name": " In late 1940s, began to experiment with rhythms of blues, decades-old musical genre of rural southern blacks."
+            }
+          ]
+        },
+        {
+          "name": " This experimentation",
+          "children": [
+            {
+              "name": " led to creation of new musical form known as rockabilly, and by 1950s, rockabilly had developed into rock and roll."
+            }
+          ]
+        },
+        {
+          "name": " Bill Haley",
+          "children": [
+            {
+              "name": " illustrated how white artists could take musical motifs from African American community and achieve mainstream success."
+            }
+          ]
+        },
+        {
+          "name": " Many",
+          "children": [
+            {
+              "name": " regarded music as threat to American values."
+            }
+          ]
+        },
+        {
+          "name": " Elvis Presley",
+          "children": [
+            {
+              "name": " When appeared on The Ed Sullivan Show, popular television variety program, camera deliberately focused on his torso and did not show his swiveling hips or legs shaking in time to music."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "HOLLYWOOD ON THE DEFENSIVE",
+      "children": [
+        {
+          "name": " Hollywood",
+          "children": [
+            {
+              "name": " At first, encountered difficulties in adjusting to post-World War II environment."
+            },
+            {
+              "name": " reacted aggressively to various challenges."
+            }
+          ]
+        },
+        {
+          "name": " domestic audiences",
+          "children": [
+            {
+              "name": " Although reached record high in 1946 and war \u2019s end meant expanding international markets too, groundwork for eventual dismantling of traditional studio system was laid in 1948, with landmark decision by U.S. Supreme Court."
+            }
+          ]
+        },
+        {
+          "name": " more than three hundred actors, screenwriters, directors, musicians, and other entertainment professionals",
+          "children": [
+            {
+              "name": " Eventually, were placed on industry blacklist."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "THE TRIUMPH OF TELEVISION",
+      "children": [
+        {
+          "name": " greatest challenge to Hollywood",
+          "children": [
+            {
+              "name": " By far, however, came from relatively new medium of television."
+            }
+          ]
+        },
+        {
+          "name": " technology",
+          "children": [
+            {
+              "name": " Although had been developed in late 1920s, through much of 1940s, only fairly small audience of wealthy had access to it."
+            }
+          ]
+        },
+        {
+          "name": " Many comedies",
+          "children": [
+            {
+              "name": " presented idealized image of white suburban family life: Happy housewife mothers, wise fathers, and mischievous but not dangerously rebellious children were constants on shows like Leave It to Beaver and Father Knows Best in late 1950s."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+};
+
+  var root = tree(d3.hierarchy(data));
+
+  var color = ['blue','green','orange','blue', 'red', 'purple', 'pink'];
+
+  var count = 0;
+
+  var link = g.selectAll(".link")
+    .data(root.links())
+    .enter().append("path")
+      .attr("class", "link")
+      .style("stroke-width", "5")
+      .attr("d", d3.linkRadial()
+          .angle(function(d) { return d.x; })
+          .radius(function(d) { return d.y; }))
+          .attr("stroke", function (d) { 
+              if (!d.source) {
+                return color[count];
+              } else if (d.source === root) {
+                count = count + 1;
+                d.source.children[count-1].height = count;
+                return color[count];
+              } else {
+                console.log(d.source);
+                for(let i = 0; i < d.source.children.length; i++){
+                  d.source.children[i].height = d.source.height;
+                }
+                return color[d.source.height];
+              }
+          });
+
+  var node = g.selectAll(".node")
+    .data(root.descendants())
+    .enter().append("g")
+      .attr("class", function(d) { return "node" + (d.children ? " node--internal" : " node--leaf"); })
+      .attr("transform", function(d) { return "translate(" + radialPoint(d.x, d.y) + ")"; });
+
+  node.append("circle")
+      .attr("r", 2);
+
+  node.append("foreignObject")
+      .attr("y", -22)
+      .attr("x", function(d) { return d.x < Math.PI || d.children? 2 : -260; })
+      .attr("text-anchor", function(d) { return d.x < Math.PI === !d.children ? "start" : "end"; })
+      .attr("width", function(d) { return d.depth < 3? 120 : 330;})
+      .attr("height", 130)
+      .append("xhtml:body")
+      .append("p")
+      .text(function(d) { return d.data.name });
+ 
+
+function radialPoint(x, y) {
+  return [(y = +y) * Math.cos(x -= Math.PI / 2), y * Math.sin(x)];
+}
+
+
+
+</script>
+</body>
+</html>
