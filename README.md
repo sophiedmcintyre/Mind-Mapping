@@ -11,7 +11,8 @@ Libraries/input used:
 - U.S. History by OpenStax (https://openstax.org/details/books/us-history)
 
 How To Use:
-- run pdfToText.py with U.S._Hisotry.pdf as the input to get textbook.txt
+- download the pdf from https://openstax.org/details/books/us-history
+- run pdfToText.py with U.S._History.pdf as the input to get textbook.txt
 - pick sections from textbook.txt to be analyzed
 - run corefsummary.py with desired section (Must be running the Stanford CoreNLP server)
 
