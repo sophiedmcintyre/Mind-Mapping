@@ -1,3 +1,11 @@
+# Sophie McIntyre
+# Latest Update: 4/23/2021
+# MTSU Honors Thesis
+# input: Section from U.S. History textbook
+# output: JSON file of parsed section
+# This program takes a section from the U.S. History textbook and applies coreference resolution,
+# automatic summarization and dependency parsing, resulting in a JSON file used for data visualization
+
 #import spacy
 #import neuralcoref
 from summarizer import Summarizer
@@ -24,7 +32,7 @@ def get_noun_verb_phrases(summary):
     stop_words = ["a", "an", "the", "this", "that", "these", "those"]
 
     tokened_sents = []
-
+    # for every sentence, tokenize the sentence then for every word in sentence, remove the stop words
     for i in range(len(parsed_sents)):
         tokened_sents.insert(i, nlp.word_tokenize(sents[i]))
         for e in parsed_sents[i]:
@@ -33,9 +41,10 @@ def get_noun_verb_phrases(summary):
 
     subject_indices = []
     #print(parsed_sents)
-
+    # for every parsed sentence
     for i in range(len(parsed_sents)):
         print(i)
+        # if any of the words in the sentence are the subject or root (if no subject identified), add it to the subject list
         for e in parsed_sents[i]:
             if e[0] == 'nsubj' or e[0] == 'nsubjpass' or e[0] == 'csubj' or e[0] == 'root':
                 print(e[0])
@@ -45,7 +54,7 @@ def get_noun_verb_phrases(summary):
                 subject_indices[-1].insert(1, e[2])
                 break
 
-
+    # For every subject found, add all the words that are linked to the subject
     for e in subject_indices:
         for w in parsed_sents[e[0]]:
             if w[1] in e[1:]:
@@ -62,22 +71,25 @@ def get_noun_verb_phrases(summary):
 #            if e[1] in subject_indices[i]:
 #                if e[2] not in subject_indices[i]:
 #                    subject_indices[i].append(e[2])
-
+    # Sort the subject list
     for s in subject_indices:
         s[1:] = sorted(s[1:])
         print(s)
 
     verb_phrase = []
 
+    # Put the rest of the sentence that isnt tied to subject in the attribute list (verb phrase)
     for e in subject_indices:
         verb_phrase.append([])
         for w in parsed_sents[e[0]]:
             if w[2] not in e[1:]:
                 verb_phrase[-1].append(w[2])
 
+    # Sort the attributes list
     for s in verb_phrase:
         s.sort()
 
+    # List to hold the subjects with corresponding attribute
     np_vp = []
     symbols = [",", ".", "(", ")", "\"", ":", ";"]
 
@@ -108,26 +120,18 @@ def get_noun_verb_phrases(summary):
 #nlp = spacy.load('en_core_web_lg')
 #neuralcoref.add_to_pipe(nlp, greedyness=0.5)
 
+# change to look at whatever section you want
 with open("section4.txt", 'r') as myfile:
     text = myfile.read()
-#text = text.replace("\n", " ")
 
-#doc = nlp(text)
-
-#if doc._.has_coref:
-#print("corefs found")
-
-#resolved_doc = doc._.coref_resolved
 lines = text.split("\n")
-#print(lines)
 
-subsectionCount = -1
-subsectionTitle = []
-subsectionText = []
-first_line = ""
+subsectionCount = -1    # Number of subsections in text
+subsectionTitle = []    # Title of every subsection
+subsectionText = []     # Text of the subsection
+first_line = ""         # Holds the first line of the text which is the main concept of mind map
 
-#print("range of lines is ", len(lines))
-
+# Get subsections
 for i in range(len(lines)):
     if i == 0:
         #print("first value hits")
@@ -141,9 +145,7 @@ for i in range(len(lines)):
     else:
         subsectionText[subsectionCount]+= " " + lines[i]
 
-#print(first_line)
-#print(subsectionTitle[0])
-#print(subsectionText[0])
+# Set up coreference resolution and BERT summarizer
 handler = CoreferenceHandler(greedyness=0.5)
 subsectionSummaries = []
 model = Summarizer(sentence_handler=handler)
@@ -151,6 +153,7 @@ model = Summarizer(sentence_handler=handler)
 
 phrases = []
 
+# Retrieve summary for each subsection, then identify the subject/attribute (noun/verb phrase pairs)
 for i in range(len(subsectionText)):
     subsectionSummaries.insert(i, model(subsectionText[i], ratio=0.3, min_length=50))
     #print(subsectionSummaries[i])
@@ -167,6 +170,7 @@ subject_list = []
 repeat = False
 index = 0
 
+# puts data into appropriate JSON format
 for i in range(len(phrases)):
     final['children'].insert(i, {'name': subsectionTitle[i], 'children' : []})
     for n in range(len(phrases[i])):
@@ -182,13 +186,11 @@ for i in range(len(phrases)):
             subject_list.append(phrases[i][n])
 
     concept_info = []
-#final['children'][i]['children'] = subject_list
+
     for k in range(len(subject_list)):
         concept_info.insert(k, {'name': subject_list[k][0], 'children': []})
         for j in subject_list[k][1:]:
             concept_info[k]['children'].append({'name': j})
-#final['children'][i]['children'].insert(k, {'name': subject_list[k][0]}, 'children': [])
-#final['children'][i]['children'].insert(n, {'children': subject_list[1:]})
     final['children'][i]['children'] = concept_info
 
     subject_list = []
@@ -197,23 +199,4 @@ for i in range(len(phrases)):
 with open("section4JSON.json", "w") as wf:
     json.dump(final, wf, indent = 2)
 
-
-
-#print(subsectionSummaries)
-
-
-#print("\n\n", subsectionSummaries[1])
-#document = ''.join(result)
-#summaryText = open("sec4summaryMaxDist.txt", 'w')
-
-#summaryText.write(first_line)
-#summaryText.write("\n")
-
-#for i in range(len(subsectionSummaries)):
-#    summaryText.write(subsectionTitle[i])
-#    summaryText.write("\n")
-#    summaryText.write(subsectionSummaries[i])
-#    summaryText.write("\n")
-
-#summaryText.close
 
